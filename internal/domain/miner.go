@@ -1,4 +1,4 @@
-package miners
+package domain
 
 import (
 	"context"

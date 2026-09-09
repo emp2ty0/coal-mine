@@ -1,4 +1,4 @@
-package device
+package domain
 
 type Device struct {
 	Class string

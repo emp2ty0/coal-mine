@@ -4,15 +4,12 @@ import (
 	"context"
 	"sync"
 	"time"
-
-	"github.com/emp2ty0/coal-mine/internal/features/device"
-	"github.com/emp2ty0/coal-mine/internal/features/miners"
 )
 
 type Enterprise struct {
 	balance int
-	miners  []*miners.Miner
-	devices []*device.Device
+	miners  []*Miner
+	devices []*Device
 	ctx     context.Context
 	mtx     *sync.Mutex
 }
@@ -20,8 +17,8 @@ type Enterprise struct {
 func NewEnterprise(ctx context.Context, mtx *sync.Mutex) *Enterprise {
 	return &Enterprise{
 		balance: 0,
-		miners:  make([]*miners.Miner, 0),
-		devices: make([]*device.Device, 0),
+		miners:  make([]*Miner, 0),
+		devices: make([]*Device, 0),
 		ctx:     ctx,
 		mtx:     mtx,
 	}
@@ -36,21 +33,21 @@ func (e *Enterprise) Run() {
 	}
 }
 
-func (e *Enterprise) GetMiners() []*miners.Miner {
+func (e *Enterprise) GetMiners() []*Miner {
 	e.mtx.Lock()
 	defer e.mtx.Unlock()
 
-	result := make([]*miners.Miner, len(e.miners))
+	result := make([]*Miner, len(e.miners))
 	copy(result, e.miners)
 
 	return result
 }
 
-func (e *Enterprise) GetDevices() []*device.Device {
+func (e *Enterprise) GetDevices() []*Device {
 	e.mtx.Lock()
 	defer e.mtx.Unlock()
 
-	result := make([]*device.Device, len(e.devices))
+	result := make([]*Device, len(e.devices))
 	copy(result, e.devices)
 
 	return result
@@ -63,8 +60,8 @@ func (e *Enterprise) GetBalance() int {
 	return e.balance
 }
 
-func (e *Enterprise) HireMiner(minerInfo miners.MinerInfo, class string) {
-	miner := miners.NewMiner(minerInfo, class)
+func (e *Enterprise) HireMiner(minerInfo MinerInfo, class string) {
+	miner := NewMiner(minerInfo, class)
 	e.mtx.Lock()
 	e.balance -= minerInfo.HireCost
 	e.miners = append(e.miners, miner)
@@ -84,6 +81,6 @@ func (e *Enterprise) BuyDevice(class string, cost int) {
 	defer e.mtx.Unlock()
 
 	e.balance -= cost
-	device := device.NewDevice(class)
+	device := NewDevice(class)
 	e.devices = append(e.devices, device)
 }

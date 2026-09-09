@@ -10,8 +10,8 @@ import (
 	"sync"
 	"syscall"
 
-	core_api "github.com/emp2ty0/coal-mine/internal/core/api"
-	"github.com/emp2ty0/coal-mine/internal/core/domain"
+	api_handlers "github.com/emp2ty0/coal-mine/internal/api/handlers"
+	"github.com/emp2ty0/coal-mine/internal/domain"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,7 +27,7 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	enterprise := domain.NewEnterprise(ctx, &mtx)
 	go enterprise.Run()
-	httpHandlers := core_api.NewHTTPHandlers(enterprise, logger, ctx)
+	httpHandlers := api_handlers.NewHTTPHandlers(enterprise, logger, ctx)
 
 	router := gin.Default()
 
