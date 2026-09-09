@@ -1,0 +1,362 @@
+openapi: 3.0.0
+info:
+  title: Coal Mine Enterprise API
+  version: 1.0.0
+  description: |
+    Игра "Угольная шахта" - управление предприятием.
+    Цель: купить всё оборудование за минимальное время.
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+paths:
+  # ============ MINERS ============
+  /miners/wages:
+    get:
+      summary: Получить информацию об оплате для каждого класса
+      tags: [Miners]
+      responses:
+        '200':
+          description: Информация о классах шахтёров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  classes:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/MinerClassInfo'
+
+  /miners/hire:
+    post:
+      summary: Нанять нового шахтёра
+      tags: [Miners]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [class]
+              properties:
+                class:
+                  type: string
+                  enum: [SMALL, NORMAL, STRONG]
+      responses:
+        '201':
+          description: Шахтёр нанят
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HiredMiner'
+        '400':
+          description: Неверный класс
+        '403':
+          description: Недостаточно средств
+
+  /miners/active:
+    get:
+      summary: Получить всех работающих шахтёров
+      tags: [Miners]
+      parameters:
+        - name: class
+          in: query
+          schema:
+            type: string
+            enum: [SMALL, NORMAL, STRONG]
+          description: Фильтр по классу (опционально)
+      responses:
+        '200':
+          description: Список активных шахтёров
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  miners:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActiveMiner'
+
+  # ============ EQUIPMENT ============
+  /equipment/prices:
+    get:
+      summary: Получить стоимость всего оборудования
+      tags: [Equipment]
+      responses:
+        '200':
+          description: Список оборудования с ценами
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  equipment:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EquipmentPrice'
+
+  /equipment/purchase:
+    post:
+      summary: Купить оборудование
+      tags: [Equipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [equipment_id]
+              properties:
+                equipment_id:
+                  type: string
+                  enum: [pickaxes, ventilation, minecarts]
+      responses:
+        '200':
+          description: Оборудование куплено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseResponse'
+        '400':
+          description: Неверный ID оборудования
+        '403':
+          description: Недостаточно средств
+        '409':
+          description: Оборудование уже куплено
+
+  /equipment/inventory:
+    get:
+      summary: Получить информацию о приобретённом оборудовании
+      tags: [Equipment]
+      responses:
+        '200':
+          description: Статус оборудования
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryResponse'
+
+  # ============ ENTERPRISE ============
+  /enterprise/status:
+    get:
+      summary: Получить промежуточную информацию
+      tags: [Enterprise]
+      responses:
+        '200':
+          description: Текущий статус предприятия
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnterpriseStatus'
+
+  /enterprise/finish:
+    post:
+      summary: Завершить игру
+      tags: [Enterprise]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: "all_equipment_purchased"
+      responses:
+        '200':
+          description: Игра завершена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResult'
+        '403':
+          description: Не всё оборудование куплено
+        '409':
+          description: Игра уже завершена
+
+components:
+  schemas:
+    MinerClassInfo:
+      type: object
+      properties:
+        hire_cost:
+          type: integer
+          description: Стоимость найма
+        energy:
+          type: integer
+          description: Количество добыч до усталости
+        yield_per_dig:
+          type: integer
+          description: Угля за одну добычу
+        dig_interval_seconds:
+          type: integer
+          description: Перерыв между добычами (сек)
+        progressive:
+          type: boolean
+          description: Прогрессирует ли доход
+        progression_per_dig:
+          type: integer
+          description: Прирост дохода за добычу (для STRONG)
+
+    HiredMiner:
+      type: object
+      properties:
+        id:
+          type: string
+        class:
+          type: string
+          enum: [SMALL, NORMAL, STRONG]
+        energy_remaining:
+          type: integer
+        status:
+          type: string
+          enum: [WORKING]
+        hired_at:
+          type: string
+          format: date-time
+
+    ActiveMiner:
+      type: object
+      properties:
+        id:
+          type: string
+        class:
+          type: string
+          enum: [SMALL, NORMAL, STRONG]
+        energy_remaining:
+          type: integer
+        total_mined:
+          type: integer
+        hired_at:
+          type: string
+          format: date-time
+
+    EquipmentPrice:
+      type: object
+      properties:
+        id:
+          type: string
+          enum: [pickaxes, ventilation, minecarts]
+        name:
+          type: string
+        cost:
+          type: integer
+        description:
+          type: string
+
+    PurchaseResponse:
+      type: object
+      properties:
+        equipment_id:
+          type: string
+        name:
+          type: string
+        cost:
+          type: integer
+        purchased_at:
+          type: string
+          format: date-time
+        new_balance:
+          type: integer
+        all_purchased:
+          type: boolean
+        remaining:
+          type: array
+          items:
+            type: string
+
+    InventoryResponse:
+      type: object
+      properties:
+        equipment:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              cost:
+                type: integer
+              is_purchased:
+                type: boolean
+              purchased_at:
+                type: string
+                format: date-time
+                nullable: true
+        total_purchased:
+          type: integer
+        total_required:
+          type: integer
+        game_completed:
+          type: boolean
+
+    EnterpriseStatus:
+      type: object
+      properties:
+        balance:
+          type: integer
+        passive_income:
+          type: integer
+        total_miners_hired:
+          type: object
+          additionalProperties:
+            type: integer
+        active_miners:
+          type: integer
+        total_mined_coal:
+          type: integer
+        total_equipment_cost:
+          type: integer
+        total_wages_paid:
+          type: integer
+        game_started_at:
+          type: string
+          format: date-time
+        uptime_seconds:
+          type: integer
+        game_completed:
+          type: boolean
+        purchased_equipment:
+          type: array
+          items:
+            type: string
+        remaining_equipment:
+          type: array
+          items:
+            type: string
+
+    GameResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [finished]
+        final_balance:
+          type: integer
+        total_miners_hired:
+          type: object
+          additionalProperties:
+            type: integer
+        total_coal_mined:
+          type: integer
+        total_equipment_cost:
+          type: integer
+        total_wages_paid:
+          type: integer
+        game_duration_seconds:
+          type: integer
+        game_started_at:
+          type: string
+          format: date-time
+        game_finished_at:
+          type: string
+          format: date-time
+        all_equipment_purchased:
+          type: boolean
