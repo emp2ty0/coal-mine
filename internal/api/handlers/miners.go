@@ -44,7 +44,7 @@ func (h *HTTPHandlers) MinerHire(c *gin.Context) {
 		"coal": h.enterprise.GetBalance(),
 	})
 
-	h.enterprise.HireMiner(minerInfo, minerClass.Class)
+	h.enterprise.HireMiner(minerInfo, minerClass.Class, c.Request.Context())
 }
 
 func (h *HTTPHandlers) MinersShow(c *gin.Context) {

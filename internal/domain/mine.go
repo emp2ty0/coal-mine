@@ -10,17 +10,14 @@ type Enterprise struct {
 	balance int
 	miners  []*Miner
 	devices []*Device
-	ctx     context.Context
-	mtx     *sync.Mutex
+	mtx     sync.Mutex
 }
 
-func NewEnterprise(ctx context.Context, mtx *sync.Mutex) *Enterprise {
+func NewEnterprise() *Enterprise {
 	return &Enterprise{
 		balance: 0,
 		miners:  make([]*Miner, 0),
 		devices: make([]*Device, 0),
-		ctx:     ctx,
-		mtx:     mtx,
 	}
 }
 
@@ -60,13 +57,13 @@ func (e *Enterprise) GetBalance() int {
 	return e.balance
 }
 
-func (e *Enterprise) HireMiner(minerInfo MinerInfo, class string) {
+func (e *Enterprise) HireMiner(minerInfo MinerInfo, class string, ctx context.Context) {
 	miner := NewMiner(minerInfo, class)
 	e.mtx.Lock()
 	e.balance -= minerInfo.HireCost
 	e.miners = append(e.miners, miner)
 	e.mtx.Unlock()
-	coalChan := miner.Run(e.ctx)
+	coalChan := miner.Run(ctx)
 	go func() {
 		for coal := range coalChan {
 			e.mtx.Lock()

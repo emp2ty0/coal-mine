@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	api_handlers "github.com/emp2ty0/coal-mine/internal/api/handlers"
@@ -16,7 +15,6 @@ import (
 )
 
 func main() {
-	mtx := sync.Mutex{}
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGINT,
@@ -25,9 +23,9 @@ func main() {
 	defer cancel()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	enterprise := domain.NewEnterprise(ctx, &mtx)
+	enterprise := domain.NewEnterprise()
 	go enterprise.Run()
-	httpHandlers := api_handlers.NewHTTPHandlers(enterprise, logger, ctx)
+	httpHandlers := api_handlers.NewHTTPHandlers(enterprise, logger)
 
 	router := gin.Default()
 
